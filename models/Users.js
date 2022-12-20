@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
+const jwt = require('jsonwebtoken');
 
 // 몽고디비에서 모델은 테이블, 스키마는 컬럼으로 이해하자
 
@@ -55,6 +56,30 @@ userSchema.pre('save', function(next){
         next()
     }
 })
+
+userSchema.methods.comparePassword = function(plainPassword, cb) {
+    // plainPassword : 암호화되지 않은 비밀번호
+    bcrypt.compare(plainPassword, this.password, function(err, isMatch) {
+        if (err) return cb(err)
+            cb(null, isMatch)
+    })
+}
+
+
+userSchema.methods.generateToken = function(cb) {
+    // jsonwebtoken을 이용해서 토큰 생성하기
+    var user = this;
+    console.log('user._id', user._id);
+    
+    var token = jwt.sign(user._id.toHexString(), 'secretToken')
+    // user._id + 'secretToken' = token;
+    user.token = token
+    user.save(function(err, user) {
+        if(err) return cb(err)
+        cb(null, user)
+    }) 
+}
+
 
 // 이 스키마를 모델로 감싸줌 
 const User = mongoose.model('User', userSchema) // {'모델의 이름', 스키마} 넣어주면 된다!!

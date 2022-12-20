@@ -36,4 +36,4 @@ const userSchema = mongoose.Schema({
 // 이 스키마를 모델로 감싸줌 
 const User = mongoose.model('User', userSchema) // {'모델의 이름', 스키마} 넣어주면 된다!!
 
-module.export = { User }
+module.exports = { User }

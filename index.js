@@ -5,7 +5,8 @@ const port = 3000 // 포트는 아무거나 해도 된다!
 const bodyParser = require('body-parser');
 const { User } = require("./models/Users");
 const config = require("./config/key");
-const cookeParser = require('cookie-parser')
+const cookeParser = require('cookie-parser');
+const { auth } = require("./middleware/auth");
 
 // application/x-www-form-urlencoded 이런 데이터를 분석해서 가져옴
 app.use(bodyParser.urlencoded({extended: true}));
@@ -25,7 +26,7 @@ app.get('/', (req, res) => {
 })
 
 // 회원가입
-app.post('/register', (req, res) => {
+app.post('/api/users/register', (req, res) => {
     //회원가입 할 때 필요한 정보들을 client에서 가져오면 그것들을 DB에 넣어준다
     const user = new User(req.body)
 
@@ -39,7 +40,7 @@ app.post('/register', (req, res) => {
 })
 
 // 로그인
-app.post('/login', (req, res) => {
+app.post('/api/users/login', (req, res) => {
     // 요청된 이메일을 DB에 있는지 찾는다, findOne() 몽고디비에서 제공하는 메서드
     User.findOne({ email: req.body.email }, (err, user) => {
         if(!user) {
@@ -63,8 +64,35 @@ app.post('/login', (req, res) => {
             })
         })
     })
-
     // 맞다면 그 유저의 토큰 생성
+})
+
+// 토큰을 이용한 인증
+app.get('/api/users/auth', auth, (req, res) => {
+    
+    // 여기까지 미들웨어(auth.js)에서 통과해 왔다는 것은 Authentication이 true
+    res.status(200).json({
+        _id: req.user._id,
+        isAdmin: req.user.role === 0 ? false : true, // role이 0 이면 일반 유저 아니면 관리자
+        isAuth: true,
+        email: req.user.email,
+        name: req.user.name,
+        lastname: req.user.lastname,
+        role: req.user.role,
+        image:req.user.image
+    })
+})
+
+// 로그아웃 기능
+app.get('/api/users/logout', auth, (req, res) => {
+    User.findOneAndUpdate({ _id: req.user._id},
+        { token: ""},
+        (err, user) => {
+            if (err) return res.json({ success: false, err });
+            return res.status(200).send({
+                success: true
+            })
+        })
 })
 
 
